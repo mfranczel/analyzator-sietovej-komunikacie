@@ -11,6 +11,7 @@ class Analyser:
 
         for packet in self.file_content:
             my_packet = Packet(packet)
+            a = len(packet)
             counter += 1
             content += str(counter) + "\n"
 
@@ -31,6 +32,13 @@ class Analyser:
             if mac == True:
                 content += "Source MAC: " + my_packet.get_source_mac() + "\n"
                 content += "Dest MAC: " + my_packet.get_dest_mac() + "\n"
+
+            content += "Frame size: " + str(a) + "\nTransfer size: ";
+            if(a < 60) :
+                content += str(64)
+            else:
+                content += str(a+4)
+            content += "\n"
 
             if l2 == True and my_packet.l2_type != "":
                 content += "L2: "
