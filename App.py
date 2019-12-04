@@ -37,7 +37,9 @@ class App(QObject):
         self.table.setSelectionBehavior(QTableWidget.SelectRows);
         self.textEdit = self.window.findChild(QTextEdit, 'textEdit')
         self.allIPButton = self.window.findChild(QPushButton, 'pushButton')
+        self.arp_filter = self.window.findChild(QPushButton, "pushButton_2")
 
+        self.arp_filter.clicked.connect(self.filter_arp)
         self.table.itemSelectionChanged.connect(self.onTableChange)
         self.chckMac.stateChanged.connect(self.onStateChangeMac)
         self.chckLOne.stateChanged.connect(self.onStateChangeLOne)
@@ -58,11 +60,14 @@ class App(QObject):
         self.showLFour = False
         self.showPorts = False
 
+    def filter_arp(self):
+        self.analyser.filter_arp(self.table)
+
     def showAllIPs(self):
         self.textEdit.setText(self.analyser.get_IPs())
 
     def onTableChange(self):
-        self.textEdit.setText(self.analyser.get_info(self.table.selectedItems()[0].row(), self.showMac, self.showLOne, self.showLTwo, self.showLThree, self.showLFour, self.showIP, self.showPorts))
+        self.textEdit.setText(self.analyser.get_info(int(self.table.selectedItems()[0].text()), self.showMac, self.showLOne, self.showLTwo, self.showLThree, self.showLFour, self.showIP, self.showPorts))
 
     def openFileMenu(self):
         fileName = QtWidgets.QFileDialog().getOpenFileName(None, 'Output directory', QDir.currentPath(), "pcap(*.pcap)");

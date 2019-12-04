@@ -162,6 +162,45 @@ class Analyser:
 
         return content
 
+    def filter_arp(self, table):
+        #while table.rowCount() > 0:
+        #    table.removeRow(0)
+        table.setRowCount(0)
+        present = []
+        k = 0
+        for i in range(len(self.packets)):
+            if self.packets[i].l2_type == "ARP" and self.packets[i] not in present:
+                table.insertRow(k)
+                table.setItem(k, 0, QTableWidgetItem(str(i)))
+                table.setItem(k, 1, QTableWidgetItem(self.packets[i].get_source_address()))
+                table.setItem(k, 2, QTableWidgetItem(self.packets[i].get_dest_address()))
+                table.setItem(k, 3, QTableWidgetItem(self.packets[i].get_protocol()))
+                arp = "[" + self.packets[i].arp_op + "] "
+                if self.packets[i].arp_op == "Request":
+                    arp += "Who has " + self.packets[i].arp_dst_ip + "? Tell " + self.packets[i].arp_src_ip
+                elif self.packets[i].arp_op == "Reply":
+                    arp += self.packets[i].arp_src_ip + " is at " + self.packets[i].arp_src_mac
+                table.setItem(k, 4, QTableWidgetItem(arp))
+                k += 1
+                present.append(self.packets[i])
+
+                for l in range(i, len(self.packets)):
+                    if self.packets[l] not in present:
+                        if self.packets[l].l2_type == "ARP" and self.packets[l].arp_dst_ip == self.packets[i].arp_src_ip and self.packets[l].arp_src_ip == self.packets[i].arp_dst_ip:
+                            present.append(self.packets[l])
+                            table.insertRow(k)
+                            table.setItem(k, 0, QTableWidgetItem(str(l)))
+                            table.setItem(k, 1, QTableWidgetItem(self.packets[l].get_source_address()))
+                            table.setItem(k, 2, QTableWidgetItem(self.packets[l].get_dest_address()))
+                            table.setItem(k, 3, QTableWidgetItem(self.packets[l].get_protocol()))
+                            arp = "[" + self.packets[l].arp_op + "] "
+                            if self.packets[l].arp_op == "Request":
+                                arp += "Who has " + self.packets[l].arp_dst_ip + "? Tell " + self.packets[l].arp_src_ip
+                            elif self.packets[l].arp_op == "Reply":
+                                arp += self.packets[l].arp_src_ip + " is at " + self.packets[l].arp_src_mac
+                            table.setItem(k, 4, QTableWidgetItem(arp))
+                            k += 1
+                            break
     def populate(self, table):
         while table.rowCount() > 0:
             table.removeRow(0)
