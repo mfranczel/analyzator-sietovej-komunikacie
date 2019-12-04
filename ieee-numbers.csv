@@ -1,13 +1,13 @@
 Ethertype (decimal),Ethertype (hex),Exp. Ethernet (decimal),Exp. Ethernet (octal),Description,Reference
-0000,0000-05DC,-,-,IEEE802.3 Length Field,[Neil_Sembower]
-0257,0101-01FF,-,-,Experimental,[Neil_Sembower]
-0512,0200,512,1000,XEROX PUP (see 0A00),"[Boggs, D., J. Shoch, E. Taft, and R. Metcalfe, ""PUP: An
+0,0000-05DC,-,-,IEEE802.3 Length Field,[Neil_Sembower]
+257,0101-01FF,-,-,Experimental,[Neil_Sembower]
+512,200,512,1000,XEROX PUP (see 0A00),"[Boggs, D., J. Shoch, E. Taft, and R. Metcalfe, ""PUP: An
 Internetwork Architecture"", XEROX Palo Alto Research Center,
 CSL-79-10, July 1979; also in IEEE Transactions on
 Communication, Volume COM-28, Number 4, April 1980.][Neil_Sembower]"
-0513,0201,-,-,PUP Addr Trans (see 0A01),[Neil_Sembower]
-,0400,,,Nixdorf,[Neil_Sembower]
-1536,0600,1536,3000,XEROX NS IDP,"[""The Ethernet, A Local Area Network: Data Link Layer and
+513,201,-,-,PUP Addr Trans (see 0A01),[Neil_Sembower]
+,400,,,Nixdorf,[Neil_Sembower]
+1536,600,1536,3000,XEROX NS IDP,"[""The Ethernet, A Local Area Network: Data Link Layer and
 Physical Layer Specification"", AA-K759B-TK, Digital Equipment
 Corporation, Maynard, MA.  Also as:  ""The Ethernet - A Local
 Area Network"", Version 1.0, Digital Equipment Corporation,
@@ -17,20 +17,20 @@ Physical Layer Specifications"", Digital, Intel and Xerox,
 November 1982.  And:  XEROX, ""The Ethernet, A Local Area
 Network: Data Link Layer and Physical Layer Specification"",
 X3T51/80-50, Xerox Corporation, Stamford, CT., October 1980.][Neil_Sembower]"
-,0660,,,DLOG,[Neil_Sembower]
-,0661,,,DLOG,[Neil_Sembower]
-2048,0800,513,1001,Internet Protocol version 4 (IPv4),[RFC7042]
-2049,0801,-,-,X.75 Internet,[Neil_Sembower]
-2050,0802,-,-,NBS Internet,[Neil_Sembower]
-2051,0803,-,-,ECMA Internet,[Neil_Sembower]
-2052,0804,-,-,Chaosnet,[Neil_Sembower]
-2053,0805,-,-,X.25 Level 3,[Neil_Sembower]
-2054,0806,-,-,Address Resolution Protocol (ARP),[RFC7042]
-2055,0807,-,-,XNS Compatability,[Neil_Sembower]
-2056,0808,-,-,Frame Relay ARP,[RFC1701]
+,660,,,DLOG,[Neil_Sembower]
+,661,,,DLOG,[Neil_Sembower]
+2048,800,513,1001,IPv4,[RFC7042]
+2049,801,-,-,X.75 Internet,[Neil_Sembower]
+2050,802,-,-,NBS Internet,[Neil_Sembower]
+2051,803,-,-,ECMA Internet,[Neil_Sembower]
+2052,804,-,-,Chaosnet,[Neil_Sembower]
+2053,805,-,-,X.25 Level 3,[Neil_Sembower]
+2054,806,-,-,ARP,[RFC7042]
+2055,807,-,-,XNS Compatability,[Neil_Sembower]
+2056,808,-,-,Frame Relay ARP,[RFC1701]
 2076,081C,-,-,Symbolics Private,[David_Plummer]
 2184,0888-088A,-,-,Xyplex,[Neil_Sembower]
-2304,0900,-,-,Ungermann-Bass net debugr,[Neil_Sembower]
+2304,900,-,-,Ungermann-Bass net debugr,[Neil_Sembower]
 2560,0A00,-,-,Xerox IEEE802.3 PUP,[Neil_Sembower]
 2561,0A01,-,-,PUP Addr Trans,[Neil_Sembower]
 2989,0BAD,-,-,Banyan VINES,[Neil_Sembower]
@@ -179,7 +179,7 @@ X3T51/80-50, Xerox Corporation, Stamford, CT., October 1980.][Neil_Sembower]"
 ,86A3-86AC,,,Gateway Communications,[Neil_Sembower]
 ,86DB,,,SECTRA,[Neil_Sembower]
 ,86DE,,,Delta Controls,[Neil_Sembower]
-,86DD,,,Internet Protocol version 6 (IPv6),[RFC7042]
+,86DD,,,IPv6,[RFC7042]
 34527,86DF,-,-,ATOMIC,[Joe_Touch]
 ,86E0-86EF,,,Landis & Gyr Powers,[Neil_Sembower]
 ,8700-8710,,,Motorola,[Neil_Sembower]
@@ -202,8 +202,8 @@ X3T51/80-50, Xerox Corporation, Stamford, CT., October 1980.][Neil_Sembower]"
 34999,88B7,-,-,IEEE Std 802 - OUI Extended Ethertype,[IEEE]
 35015,88C7,-,-,IEEE Std 802.11 - Pre-Authentication (802.11i),[IEEE]
 35020,88CC,-,-,IEEE Std 802.1AB - Link Layer Discovery Protocol (LLDP),[IEEE]
-35045,88E5,-,-,IEEE Std 802.1AE - Media Access Control Security,[IEEE]
-35047,88E7,-,-,Provider Backbone Bridging Instance tag,[IEEE Std 802.1Q-2014]
+35045,8.80E+06,-,-,IEEE Std 802.1AE - Media Access Control Security,[IEEE]
+35047,8.80E+08,-,-,Provider Backbone Bridging Instance tag,[IEEE Std 802.1Q-2014]
 35061,88F5,-,-,IEEE Std 802.1Q  - Multiple VLAN Registration Protocol (MVRP),[IEEE]
 35062,88F6,-,-,IEEE Std 802.1Q - Multiple Multicast Registration Protocol (MMRP),[IEEE]
 35085,890D,-,-,IEEE Std 802.11 - Fast Roaming Remote Request (802.11r),[IEEE]

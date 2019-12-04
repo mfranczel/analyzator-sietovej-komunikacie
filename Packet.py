@@ -14,11 +14,15 @@ class Packet:
     l4_type = ""
     source_port = 0
     dest_port = 0
+    tcp_flag = ""
+    arp_op = ""
+    arp_src_ip = ""
+    arp_dst_ip = ""
 
     def __init__(self, data):
         self.data = bytes(data)
-        self.set_source_mac()
-        self.set_dest_mac()
+        self.source_mac = self.set_source_mac(6)
+        self.dest_mac = self.set_dest_mac(0)
         self.set_type()
         self.set_l2_type()
 
@@ -40,9 +44,23 @@ class Packet:
                 break
 
         if ethertype == 2048:
-            self.setSourceIP()
-            self.setDestIP()
+            self.source_ip = self.setSourceIP(26)
+            self.dest_ip = self.setDestIP(30)
             self.set_l3_type()
+
+        if self.l2_type == "ARP":
+            arp_op = int.from_bytes(self.data[20:22], 'big')
+            if arp_op == 1:
+                self.arp_op = "Request"
+            elif arp_op == 2:
+                self.arp_op = "Reply"
+
+            if int.from_bytes(self.data[16:18], 'big') == 2048:
+                self.arp_src_mac = self.set_source_mac(22)
+                self.arp_dst_mac = self.set_dest_mac(32)
+                self.arp_src_ip = self.setSourceIP(28)
+                self.arp_dst_ip = self.setDestIP(38)
+
 
     def set_l3_type(self):
         csv_file = csv.reader(open('ipv4-numbers.csv', "r"), delimiter=",")
@@ -52,6 +70,27 @@ class Packet:
                 self.l3_type = row[1]
                 break
         if self.l3_type == "TCP" or self.l3_type == "UDP":
+            if self.l3_type == "TCP":
+                l4_header_start = 14 + 4 * int(bin(self.data[14])[4:], 2)
+                flag = int(self.data[l4_header_start + 13])
+                if (flag & 1) != 0:
+                    self.tcp_flag += " FIN"
+                if (flag & 2 != 0):
+                    self.tcp_flag += " SYN"
+                if (flag & 4 != 0):
+                    self.tcp_flag += " RST"
+                if (flag & 8 != 0):
+                    self.tcp_flag += " PSH"
+                if (flag & 16 != 0):
+                    self.tcp_flag += " ACK"
+                if (flag & 32 != 0):
+                    self.tcp_flag += " URG"
+                if (flag & 64 != 0):
+                    self.tcp_flag += " ECE"
+                if (flag & 128 != 0):
+                    self.tcp_flag += " CWR"
+
+
             self.set_l4_type()
 
     def set_l4_type(self):
@@ -81,23 +120,27 @@ class Packet:
             self.header_len += 3
             self.set_ieee_type()
 
-    def set_source_mac(self):
-        pos = 6
+    def set_source_mac(self, pos):
         source_mac = ""
         for i in range(6):
             source_mac += str(format(self.data[pos], '02x')) + ":"
             pos+=1
         source_mac = source_mac[:-1]
-        self.source_mac = source_mac
+        return source_mac
 
-    def set_dest_mac(self):
-        pos = 0
+    def set_dest_mac(self, pos):
         dest_mac = ""
         for i in range(6):
             dest_mac += str(format(self.data[pos], '02x')) + ":"
             pos+=1
         dest_mac = dest_mac[:-1]
-        self.dest_mac = dest_mac
+        return dest_mac
+
+    def set_ipv6_addr(self, pos):
+        ip = ""
+        for i in range(8):
+            ip += str(format(int.from_bytes(self.data[pos:pos+2], "big"), '04x')) + ":"
+            pos += 2
 
     def get_type(self):
         return self.type
@@ -108,21 +151,52 @@ class Packet:
     def get_dest_mac(self):
         return self.dest_mac
 
+    def get_source_address(self):
+        if self.source_ip == "":
+            return self.source_mac
+        return self.source_ip
+
+    def get_dest_address(self):
+        if self.dest_ip == "":
+            return self.dest_mac
+        return self.dest_ip
+
+    def get_protocol(self):
+        if self.l4_type != "":
+            return self.l4_type
+        if self.l3_type != "":
+            return self.l3_type
+        if self.l2_type != "":
+            return self.l2_type
+
+        if self.type == 0 :
+            return "Ethernet II"
+        elif self.type == 1:
+            return "IEEE 802.3 Raw"
+        elif self.type == 2:
+            return "IEEE 802.3 LLC + SNAP"
+        else :
+            return "IEEE 802.3 LLC"
+
     def get_contents_hex(self):
         data = binascii.hexlify(bytearray(self.data))
         data = b" ".join(data[i:i + 2] for i in range(0, len(data), 2))
         data = b"\n".join(data[i:i + 48] for i in range(0, len(data), 48))
         return data
 
-    def setSourceIP(self):
+    def setSourceIP(self, k):
+        source_ip = ""
         for i in range(4):
-            self.source_ip += str(self.data[26+i]) + ":"
-        self.source_ip = self.source_ip[:len(self.source_ip)-1]
+            source_ip += str(self.data[k+i]) + "."
+        source_ip = source_ip[:len(source_ip)-1]
+        return source_ip
 
-    def setDestIP(self):
+    def setDestIP(self, k):
+        dest_ip = ""
         for i in range(4):
-            self.dest_ip += str(self.data[30+i]) + ":"
-        self.dest_ip = self.dest_ip[:len(self.dest_ip)-1]
+            dest_ip += str(self.data[k+i]) + "."
+        dest_ip = dest_ip[:len(dest_ip)-1]
+        return dest_ip
 
     def getSourceIP(self):
         return self.source_ip
