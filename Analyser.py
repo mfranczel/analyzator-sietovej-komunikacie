@@ -82,8 +82,11 @@ class Analyser:
 
     def get_IPs(self):
         content = ""
+        sorted(self.ips.items(), key=lambda x: x[1], reverse=True)
         for a in self.ips:
             content += a + "\n"
+        content += "Most active sender:\n"
+        content += str(list(self.ips)[0]) + " - " +str(list(self.ips.values())[0])
         return content
 
     def get_hex(self, mac, l1, l2, l3, l4, IP, ports):
