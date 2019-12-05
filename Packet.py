@@ -110,8 +110,25 @@ class Packet:
         elif(int.from_bytes(self.data[14:16], 'big') == 43690):
             self.type = 2
             self.header_len += 5
+            ethertype = int.from_bytes(self.data[20:22], "big")
+            csv_file = csv.reader(open('ieee-numbers.csv', "r"), delimiter=",")
+            next(csv_file)
+            for row in csv_file:
+                if (row[0] == ''):
+                    continue
+
+                if (int(row[0]) == ethertype):
+                    self.l2_type = row[4]
+                    break
+
         else:
             self.type = 3
+            csv_file = csv.reader(open('ieee-802-LLC.csv', "r"), delimiter=",")
+            next(csv_file)
+            for row in csv_file:
+                if (int(self.data[14]) == int(row[2])):
+                    self.l2_type = row[3]
+                    break
 
     def set_type(self):
         if(int.from_bytes(self.data[12:14], 'big') > 1536) :
@@ -163,7 +180,11 @@ class Packet:
 
     def get_protocol(self):
         if self.l4_type != "":
-            return self.l4_type
+            if self.l3_type != "TCP":
+                return self.l4_type
+            else:
+                if self.tcp_flag == " PSH ACK":
+                    return self.l4_type
         if self.l3_type != "":
             return self.l3_type
         if self.l2_type != "":
@@ -206,5 +227,14 @@ class Packet:
 
     def get_l3type(self):
         return self.l3_type
+
+    def tcp_parse(self):
+        res = {}
+        l3_header_start = 14 + 4 * int(bin(self.data[14])[4:], 2)
+        res["seq"] = int.from_bytes(self.data[l3_header_start + 4:l3_header_start + 8], 'big')
+        if "ACK" in self.tcp_flag:
+            res["ack"] = int.from_bytes(self.data[l3_header_start + 8:l3_header_start + 12], 'big')
+        res["win"] = int.from_bytes(self.data[l3_header_start + 14:l3_header_start + 16], 'big')
+        return res
 
 

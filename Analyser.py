@@ -75,6 +75,8 @@ class Analyser:
             content += "Receiver MAC address: " + packet.arp_dst_mac + "\n"
             content += "Sender IP: " + packet.arp_src_ip + "\n"
             content += "Target IP: " + packet.arp_dst_ip + "\n"
+
+        content += str(packet.get_contents_hex().decode())[0:len(packet.get_contents_hex())] + "\n"
         return content
 
 
@@ -217,6 +219,12 @@ class Analyser:
                 ports = str(packet.source_port) + " -> " + str(packet.dest_port)
                 if packet.tcp_flag != "":
                     ports += " [" + packet.tcp_flag + "]"
+                if packet.get_protocol() == "TCP":
+                    tcp_info = packet.tcp_parse()
+                    ports += " Seq=" + str(tcp_info["seq"])
+                    if "ack" in tcp_info.keys():
+                        ports += " Ack=" + str(tcp_info["ack"])
+                    ports += " Win=" + str(tcp_info["win"])
                 table.setItem(i, 4, QTableWidgetItem(ports))
             if packet.arp_op != "":
                 arp = "[" + packet.arp_op + "] "

@@ -1,0 +1,18 @@
+Link Service Access Point (IEEE Binary),Link Service Access Point (Internet Binary ),Link Service Access Point (Decimal),Description,Reference
+0,0,0,Null LSAP,[IEEE]
+1000000,10,2,Indiv LLC Sublayer Mgt,[IEEE]
+11000000,11,3,Group LLC Sublayer Mgt,[IEEE]
+100000,100,4,SNA Path Control,[IEEE]
+1100000,110,6,Reserved (DOD IP),[RFC768][JBP]
+1110000,1110,14,PROWAY-LAN,[IEEE]
+1110010,1001110,78,EIA-RS 511,[IEEE]
+1111010,1011110,94,ISI IP,[JBP]
+1110001,10001110,142,PROWAY-LAN,[IEEE]
+1010101,10101010,170,SNAP,[IEEE]
+1111111,11111110,254,ISO CLNS IS 8473,[RFC926][JXJ]
+11111111,11111111,255,Global DSAP,[IEEE]
+,,66,STP,
+,,126,X.25 PLP,
+,,224,IPC (Novell NetWare),
+,,244,Lan Management,
+,,240,NetBios,
