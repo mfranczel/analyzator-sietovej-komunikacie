@@ -9,6 +9,18 @@ from scapy.all import *
 from Analyser import Analyser
 
 
+class TextWindow(QObject):
+    def __init__(self, ui_file, analyser,parent=None):
+        super(TextWindow, self).__init__(parent)
+        ui_file = QFile(ui_file)
+        ui_file.open(QFile.ReadOnly)
+        loader = QUiLoader()
+        self.window = loader.load(ui_file)
+        ui_file.close()
+        self.window.show()
+        self.textEdit = self.window.findChild(QTextEdit, 'textEdit')
+        self.textEdit.setText(analyser.get_hex(True, True, True, True, True, True, True))
+
 class App(QObject):
     analyser = None
 
@@ -24,7 +36,6 @@ class App(QObject):
         self.btn = self.window.findChild(QAction, 'actionOpen')
         self.btn.triggered.connect(self.openFileMenu)
 
-        self.combo = self.window.findChild(QComboBox, 'comboBox')
 
         self.chckMac = self.window.findChild(QCheckBox, 'checkBox')
         self.chckLOne = self.window.findChild(QCheckBox, 'checkBox_2')
@@ -40,7 +51,13 @@ class App(QObject):
         self.arp_filter = self.window.findChild(QPushButton, "pushButton_2")
         self.tcp_filter = self.window.findChild(QPushButton, "pushButton_3")
         self.tftp_filter = self.window.findChild(QPushButton, "pushButton_4")
+        self.all_filter = self.window.findChild(QPushButton, "pushButton_5")
+        self.icmp_filter = self.window.findChild(QPushButton, "pushButton_6")
+        self.text_view = self.window.findChild(QPushButton, "pushButton_7")
 
+        self.text_view.clicked.connect(self.open_text_view)
+        self.icmp_filter.clicked.connect(self.filter_icmp)
+        self.all_filter.clicked.connect(self.filter_all)
         self.tftp_filter.clicked.connect(self.filter_tftp)
         self.arp_filter.clicked.connect(self.filter_arp)
         self.tcp_filter.clicked.connect(self.filter_tcp)
@@ -54,7 +71,6 @@ class App(QObject):
         self.chckPORTS.stateChanged.connect(self.onStateChangePorts)
         self.allIPButton.clicked.connect(self.showAllIPs)
         self.table.setColumnWidth(0, 15);
-        self.combo.activated.connect(self.comboSelect)
         self.window.show()
         self.showMac = False
         self.showLOne = False
@@ -64,14 +80,22 @@ class App(QObject):
         self.showLFour = False
         self.showPorts = False
 
+    def open_text_view(self):
+        self.app_2 = TextWindow('Text_window.ui', analyser=self.analyser)
+
+    def filter_icmp(self):
+        self.analyser.filter_icmp(self.table, True)
+    def filter_all(self):
+        self.analyser.sort_communicastions(self.table)
+
     def filter_tftp(self):
-        self.analyser.filter_tftp(self.table)
+        self.analyser.filter_tftp(self.table, True)
 
     def filter_tcp(self):
-        self.analyser.filter_tcp(self.table)
+        self.analyser.filter_tcp(self.table, True)
 
     def filter_arp(self):
-        self.analyser.filter_arp(self.table)
+        self.analyser.filter_arp(self.table, True)
 
     def showAllIPs(self):
         self.textEdit.setText(self.analyser.get_IPs())
@@ -81,15 +105,11 @@ class App(QObject):
 
     def openFileMenu(self):
         fileName = QtWidgets.QFileDialog().getOpenFileName(None, 'Output directory', QDir.currentPath(), "pcap(*.pcap)");
+        self.window.setWindowTitle(fileName[0])
         self.analyser = Analyser(rdpcap(fileName[0]))
         #self.textEdit.append(str(self.file.res))
         self.analyser.populate(self.table)
         #self.textEdit.append(self.analyser.get_hex(self.showMac, self.showLOne, self.showLTwo, self.showLThree, self.showLFour, self.showIP, self.showPorts))
-
-    def comboSelect(self, sel):
-        self.chckLOne.setChecked(True)
-        self.chckLTwo.setChecked(True)
-        self.chckMac.setChecked(True)
 
     def onStateChangeMac(self):
         if self.chckMac.isChecked():

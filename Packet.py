@@ -100,6 +100,10 @@ class Packet:
                 self.icmp_type = "Echo Reply"
             elif type == 8:
                 self.icmp_type = "Echo Request"
+            elif type == 3:
+                self.icmp_type = "Destination unreachable"
+            elif type == 11:
+                self.icmp_type = "TTL Exceeded"
 
 
     def set_l4_type(self):

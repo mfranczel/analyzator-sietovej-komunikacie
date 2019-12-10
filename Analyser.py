@@ -1,4 +1,4 @@
-from PySide2.QtGui import QColor
+from PySide2.QtGui import QColor, QBrush
 from PySide2.QtWidgets import QTableWidgetItem
 
 from Packet import Packet
@@ -7,6 +7,7 @@ import operator
 class Analyser:
     ips = {}
     packets = []
+    text_color = QColor(242, 242, 242)
     def __init__(self, file_content):
         self.ips = {}
         self.packets = []
@@ -87,7 +88,13 @@ class Analyser:
         for a in self.ips:
             content += a + "\n"
         content += "Most active sender:\n"
-        content += str(list(self.ips)[0]) + " - " +str(list(self.ips.values())[0])
+        most_active = 0
+        most_active_ip = ""
+        for i in self.ips.keys():
+            if self.ips[i] > most_active:
+                most_active = self.ips[i]
+                most_active_ip = i
+        content += most_active_ip + " - " +str(most_active)
         return content
 
     def get_hex(self, mac, l1, l2, l3, l4, IP, ports):
@@ -98,7 +105,14 @@ class Analyser:
             my_packet = packet
             a = len(packet.data)
             counter += 1
-            content += str(counter) + "\n"
+            content += "ramec " + str(counter) + "\n"
+            content += "dĺžka rámca z poskytnutá pcap API - " + str(a) + " B\n"
+            content += "dĺžka rámca prenášaného po médiu  - "
+            if (a < 60):
+                content += str(64) + " B"
+            else:
+                content += str(a + 4) + " B"
+            content += "\n"
 
             if l1 == True:
                 content += "L1: "
@@ -117,13 +131,6 @@ class Analyser:
             if mac == True:
                 content += "Source MAC: " + my_packet.get_source_mac() + "\n"
                 content += "Dest MAC: " + my_packet.get_dest_mac() + "\n"
-
-            content += "Frame size: " + str(a) + "\nTransfer size: ";
-            if(a < 60) :
-                content += str(64)
-            else:
-                content += str(a+4)
-            content += "\n"
 
             if l2 == True and my_packet.l2_type != "":
                 content += "L2: "
@@ -158,26 +165,59 @@ class Analyser:
             elif src_already_in_list and my_packet.source_ip != "":
                 self.ips[my_packet.source_ip] += 1
 
-            content += str(my_packet.get_contents_hex().decode())[0:len(my_packet.get_contents_hex())] + "\n"
+            content += str(my_packet.get_contents_hex().decode())[0:len(my_packet.get_contents_hex())] + "\n\n"
 
         content += "IP's:\n"
         for a in self.ips:
             content += a + "\n"
         content += "Most active sender: " + max(self.ips.items(), key=operator.itemgetter(1))[0] + "\n"
 
-
         return content
 
-    def filter_tcp(self, table):
-        while table.rowCount() > 0:
-            table.removeRow(0)
-        table.setRowCount(0)
+    def filter_icmp(self, table, rm):
+        if rm:
+            while table.rowCount() > 0:
+                table.removeRow(0)
+            table.setRowCount(0)
+            l = 0
+        else:
+            l = table.rowCount()
+
+        icmp_packets = []
+        for packet in self.packets:
+            if packet.l3_type == "ICMP":
+                icmp_packets.append(packet)
+
+        for k in range(len(icmp_packets)):
+            ports = icmp_packets[k].icmp_type
+            index = QTableWidgetItem(str(self.packets.index(icmp_packets[k]) + 1))
+            src = QTableWidgetItem(icmp_packets[k].get_source_address())
+            dest = QTableWidgetItem(icmp_packets[k].get_dest_address())
+            proto = QTableWidgetItem(icmp_packets[k].get_protocol())
+            info = QTableWidgetItem(ports)
+
+            table.insertRow(l)
+            table.setItem(l, 0, index)
+            table.setItem(l, 1, src)
+            table.setItem(l, 2, dest)
+            table.setItem(l, 3, proto)
+            table.setItem(l, 4, info)
+            l += 1
+
+    def filter_tcp(self, table, rm):
+        if rm:
+            while table.rowCount() > 0:
+                table.removeRow(0)
+            table.setRowCount(0)
+            l = 0
+        else:
+            l = table.rowCount()
         tcp_packets = []
         done = []
+
         for packet in self.packets:
             if packet.l3_type == "TCP":
                 tcp_packets.append(packet)
-        l = 0
         a = True
         for j in range(len(tcp_packets)):
             if (tcp_packets[j] not in done):
@@ -213,6 +253,11 @@ class Analyser:
                         dest.setBackgroundColor(color)
                         proto.setBackgroundColor(color)
                         info.setBackgroundColor(color)
+                        index.setForeground(QBrush(self.text_color))
+                        src.setForeground(QBrush(self.text_color))
+                        dest.setForeground(QBrush(self.text_color))
+                        proto.setForeground(QBrush(self.text_color))
+                        info.setForeground(QBrush(self.text_color))
 
                         table.insertRow(l)
                         table.setItem(l, 0, index)
@@ -223,9 +268,9 @@ class Analyser:
                         l += 1
 
                 a = not a
-                if tcp_flags[0] == " SYN" and tcp_flags[1] == " SYN ACK":
+                if len(tcp_flags) >= 2 and tcp_flags[0] == " SYN" and tcp_flags[1] == " SYN ACK":
 
-                    if tcp_flags[len(tcp_flags)-1] == " RST ACK":
+                    if "RST" in tcp_flags[len(tcp_flags)-1]:
                         color = QColor('GREEN')
                     elif "FIN" in tcp_flags[len(tcp_flags)-4] and tcp_flags[len(tcp_flags)-3] == " ACK" and "FIN" in tcp_flags[len(tcp_flags)-2] and tcp_flags[len(tcp_flags)-1] == " ACK":
                         color = QColor('GREEN')
@@ -233,60 +278,99 @@ class Analyser:
                         color = QColor('GREEN')
                     elif "FIN" in tcp_flags[len(tcp_flags)-4] and "FIN" in tcp_flags[len(tcp_flags)-3] and "ACK" in tcp_flags[len(tcp_flags)-2] and "ACK" in tcp_flags[len(tcp_flags)-1]:
                         color = QColor('GREEN')
+                    else:
+                        color = QColor('RED')
                 else:
                     color = QColor('RED')
+
                 index.setBackgroundColor(color)
                 src.setBackgroundColor(color)
                 dest.setBackgroundColor(color)
                 proto.setBackgroundColor(color)
                 info.setBackgroundColor(color)
 
-    def filter_tftp(self, table):
-        while table.rowCount() > 0:
-            table.removeRow(0)
-        table.setRowCount(0)
+    def sort_communicastions(self, table):
+        self.filter_arp(table, True)
+        self.filter_tcp(table, False)
+        self.filter_tftp(table, False)
+        self.filter_icmp(table, False)
 
-        k = 0
+    def insert_tftp(self, table, packet, k, a):
+        infor = str(packet.source_port) + " -> " + str(packet.dest_port)
+
+        table.insertRow(k)
+        index = QTableWidgetItem(str(self.packets.index(packet) + 1))
+        src = QTableWidgetItem(packet.get_source_address())
+        dest = QTableWidgetItem(packet.get_dest_address())
+        proto = QTableWidgetItem(packet.get_protocol())
+        info = QTableWidgetItem(infor)
+
+        if a:
+            color = QColor(69, 34, 34)
+        else:
+            color = QColor(35, 66, 32)
+
+        index.setBackgroundColor(color)
+        src.setBackgroundColor(color)
+        dest.setBackgroundColor(color)
+        proto.setBackgroundColor(color)
+        info.setBackgroundColor(color)
+        index.setForeground(QBrush(self.text_color))
+        src.setForeground(QBrush(self.text_color))
+        dest.setForeground(QBrush(self.text_color))
+        proto.setForeground(QBrush(self.text_color))
+        info.setForeground(QBrush(self.text_color))
+        table.setItem(k, 0, index)
+        table.setItem(k, 1, src)
+        table.setItem(k, 2, dest)
+        table.setItem(k, 3, proto)
+        table.setItem(k, 4, info)
+
+    def filter_tftp(self, table, rm):
+        if rm:
+            while table.rowCount() > 0:
+                table.removeRow(0)
+            table.setRowCount(0)
+            k = 0
+        else:
+            k = table.rowCount()
+
         a = True
+        added_ports = []
         for packet in self.packets:
             if packet.source_port == 69 or packet.dest_port == 69:
                 a = not a
-            if packet.l4_type == "tftp":
-                infor = str(packet.source_port) + " -> " + str(packet.dest_port)
-
-                table.insertRow(k)
-                index = QTableWidgetItem(str(self.packets.index(packet) + 1))
-                src = QTableWidgetItem(packet.get_source_address())
-                dest = QTableWidgetItem(packet.get_dest_address())
-                proto = QTableWidgetItem(packet.get_protocol())
-                info = QTableWidgetItem(infor)
-
-                if a:
-                    color = QColor(69, 34, 34)
-                else:
-                    color = QColor(35, 66, 32)
-
-                index.setBackgroundColor(color)
-                src.setBackgroundColor(color)
-                dest.setBackgroundColor(color)
-                proto.setBackgroundColor(color)
-                info.setBackgroundColor(color)
-                table.setItem(k, 0, index)
-                table.setItem(k, 1, src)
-                table.setItem(k, 2, dest)
-                table.setItem(k, 3, proto)
-                table.setItem(k, 4, info)
+            if packet.l4_type == "tftp" and packet.source_port not in added_ports:
+                src_port = packet.source_port
+                added_ports.append(src_port)
+                dst_port = -1
+                self.insert_tftp(table, packet, k, a)
                 k += 1
+                for i in range(self.packets.index(packet), len(self.packets)):
+                    if dst_port == -1 and self.packets[i].dest_port == src_port:
+                        dst_port = self.packets[i].source_port
+                        added_ports.append(dst_port)
+                        self.insert_tftp(table, self.packets[i], k, a)
+                        k += 1
+                    elif self.packets[i].source_port == src_port and self.packets[i].dest_port == dst_port:
+                        self.insert_tftp(table, self.packets[i], k, a)
+                        k += 1
+                    elif self.packets[i].source_port == dst_port and self.packets[i].dest_port == src_port:
+                        self.insert_tftp(table, self.packets[i], k, a)
+                        k += 1
 
 
 
-    def filter_arp(self, table):
-        while table.rowCount() > 0:
-            table.removeRow(0)
-        table.setRowCount(0)
+    def filter_arp(self, table, rm):
+        if rm:
+            while table.rowCount() > 0:
+                table.removeRow(0)
+            table.setRowCount(0)
+            k = 0
+        else:
+            k = table.rowCount()
         arps = []
         added = []
-        k = 0
 
         for packet in self.packets:
             if packet.l2_type == "ARP":
@@ -318,6 +402,11 @@ class Analyser:
                         dest.setBackgroundColor(color)
                         proto.setBackgroundColor(color)
                         info.setBackgroundColor(color)
+                        index.setForeground(QBrush(self.text_color))
+                        src.setForeground(QBrush(self.text_color))
+                        dest.setForeground(QBrush(self.text_color))
+                        proto.setForeground(QBrush(self.text_color))
+                        info.setForeground(QBrush(self.text_color))
 
                         table.setItem(k, 0, index)
                         table.setItem(k, 1, src)
@@ -349,6 +438,11 @@ class Analyser:
                         dest.setBackgroundColor(color)
                         proto.setBackgroundColor(color)
                         info.setBackgroundColor(color)
+                        index.setForeground(QBrush(self.text_color))
+                        src.setForeground(QBrush(self.text_color))
+                        dest.setForeground(QBrush(self.text_color))
+                        proto.setForeground(QBrush(self.text_color))
+                        info.setForeground(QBrush(self.text_color))
 
                         table.insertRow(k)
                         table.setItem(k, 0, index)
@@ -367,12 +461,10 @@ class Analyser:
         table.setRowCount(0)
         i = 0
         tftp = False
+        added_ports = []
         for packet in self.packets:
             table.insertRow(i)
             protocol = packet.get_protocol()
-            if protocol == "UDP" and packet.l4_type == "" and tftp == True:
-                protocol = "tftp"
-                packet.l4_type = "tftp"
             table.setItem(i, 0, QTableWidgetItem(str(i+1)))
             table.setItem(i, 1, QTableWidgetItem(packet.get_source_address()))
             table.setItem(i, 2, QTableWidgetItem(packet.get_dest_address()))
@@ -398,10 +490,20 @@ class Analyser:
             if packet.l3_type == "ICMP":
                 icmp = packet.icmp_type
                 table.setItem(i, 4, QTableWidgetItem(icmp))
-            if tftp == True and (packet.l3_type != "UDP" or (packet.l3_type == "UDP" and packet.l4_type != "tftp")):
-                tftp = False
-            if packet.l4_type == "tftp" and (packet.tftp_type == 1 or packet.tftp_type == 2):
-                tftp = True
+            if packet.l4_type == "tftp" and packet.source_port not in added_ports:
+                src_port = packet.source_port
+                added_ports.append(src_port)
+                dst_port = -1
+                for j in range(self.packets.index(packet), len(self.packets)):
+                    if dst_port == -1 and self.packets[j].dest_port == src_port:
+                        dst_port = self.packets[j].source_port
+                        added_ports.append(dst_port)
+                        self.packets[j].l4_type = "tftp"
+                    elif self.packets[j].source_port == src_port and self.packets[j].dest_port == dst_port:
+                        self.packets[j].l4_type = "tftp"
+                    elif self.packets[j].source_port == dst_port and self.packets[j].dest_port == src_port:
+                        self.packets[j].l4_type = "tftp"
+
             i += 1
 
 
