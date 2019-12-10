@@ -18,6 +18,8 @@ class Packet:
     arp_op = ""
     arp_src_ip = ""
     arp_dst_ip = ""
+    icmp_type = ""
+    tftp_type = -1
 
     def __init__(self, data):
         self.data = bytes(data)
@@ -89,9 +91,16 @@ class Packet:
                     self.tcp_flag += " ECE"
                 if (flag & 128 != 0):
                     self.tcp_flag += " CWR"
-
-
             self.set_l4_type()
+        if self.l3_type == "ICMP":
+            l4_header_start = 14 + 4 * int(bin(self.data[14])[4:], 2)
+            type = int(self.data[l4_header_start])
+            code = int(self.data[l4_header_start+1])
+            if type == 0:
+                self.icmp_type = "Echo Reply"
+            elif type == 8:
+                self.icmp_type = "Echo Request"
+
 
     def set_l4_type(self):
         csv_file = csv.reader(open('port-numbers.csv', "r"), delimiter=",")
@@ -101,8 +110,13 @@ class Packet:
         next(csv_file)
         for row in csv_file:
             if ("-" not in row[1] and row[0] != "" and row[1] != "" and int(row[1]) == self.source_port) or ("-" not in row[1] and row[0] != "" and row[1] != "" and int(row[1]) == self.dest_port):
-                self.l4_type = row[0]
-                break
+                if row[2] == self.l3_type.lower():
+                    self.l4_type = row[0]
+                    if self.l4_type == "router":
+                        self.l4_type = "RIP"
+                    if self.l4_type == "tftp":
+                        self.tftp_type = int.from_bytes(self.data[l4_header_start+8:l4_header_start+10], 'big')
+                    break
 
     def set_ieee_type(self):
         if(int.from_bytes(self.data[14:16], 'big') == 65535):

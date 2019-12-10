@@ -1,3 +1,4 @@
+from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QTableWidgetItem
 
 from Packet import Packet
@@ -25,9 +26,9 @@ class Analyser:
                 self.ips[my_packet.source_ip] += 1
 
     def get_info(self, i, mac, l1, l2, l3, l4, IP, ports):
+        i -= 1
         packet = self.packets[i]
         content = ""
-
         if l1:
             content += "L1: "
             if (packet.get_type() == 0):
@@ -167,57 +168,215 @@ class Analyser:
 
         return content
 
-    def filter_arp(self, table):
-        #while table.rowCount() > 0:
-        #    table.removeRow(0)
+    def filter_tcp(self, table):
+        while table.rowCount() > 0:
+            table.removeRow(0)
         table.setRowCount(0)
-        present = []
-        k = 0
-        for i in range(len(self.packets)):
-            if self.packets[i].l2_type == "ARP" and self.packets[i] not in present:
-                table.insertRow(k)
-                table.setItem(k, 0, QTableWidgetItem(str(i)))
-                table.setItem(k, 1, QTableWidgetItem(self.packets[i].get_source_address()))
-                table.setItem(k, 2, QTableWidgetItem(self.packets[i].get_dest_address()))
-                table.setItem(k, 3, QTableWidgetItem(self.packets[i].get_protocol()))
-                arp = "[" + self.packets[i].arp_op + "] "
-                if self.packets[i].arp_op == "Request":
-                    arp += "Who has " + self.packets[i].arp_dst_ip + "? Tell " + self.packets[i].arp_src_ip
-                elif self.packets[i].arp_op == "Reply":
-                    arp += self.packets[i].arp_src_ip + " is at " + self.packets[i].arp_src_mac
-                table.setItem(k, 4, QTableWidgetItem(arp))
-                k += 1
-                present.append(self.packets[i])
+        tcp_packets = []
+        done = []
+        for packet in self.packets:
+            if packet.l3_type == "TCP":
+                tcp_packets.append(packet)
+        l = 0
+        a = True
+        for j in range(len(tcp_packets)):
+            if (tcp_packets[j] not in done):
+                tcp_flags = []
+                for k in range(j, len(tcp_packets)):
 
-                for l in range(i, len(self.packets)):
-                    if self.packets[l] not in present:
-                        if self.packets[l].l2_type == "ARP" and self.packets[l].arp_dst_ip == self.packets[i].arp_src_ip and self.packets[l].arp_src_ip == self.packets[i].arp_dst_ip:
-                            present.append(self.packets[l])
-                            table.insertRow(k)
-                            table.setItem(k, 0, QTableWidgetItem(str(l)))
-                            table.setItem(k, 1, QTableWidgetItem(self.packets[l].get_source_address()))
-                            table.setItem(k, 2, QTableWidgetItem(self.packets[l].get_dest_address()))
-                            table.setItem(k, 3, QTableWidgetItem(self.packets[l].get_protocol()))
-                            arp = "[" + self.packets[l].arp_op + "] "
-                            if self.packets[l].arp_op == "Request":
-                                arp += "Who has " + self.packets[l].arp_dst_ip + "? Tell " + self.packets[l].arp_src_ip
-                            elif self.packets[l].arp_op == "Reply":
-                                arp += self.packets[l].arp_src_ip + " is at " + self.packets[l].arp_src_mac
-                            table.setItem(k, 4, QTableWidgetItem(arp))
-                            k += 1
-                            break
+                    if ((tcp_packets[j].source_port == tcp_packets[k].source_port and tcp_packets[j].dest_port == tcp_packets[k].dest_port) or (tcp_packets[j].source_port == tcp_packets[k].dest_port and tcp_packets[j].dest_port == tcp_packets[k].source_port)):
+
+                        done.append(tcp_packets[k])
+                        tcp_flags.append(tcp_packets[k].tcp_flag)
+
+                        ports = str(tcp_packets[k].source_port) + " -> " + str(tcp_packets[k].dest_port)
+                        tcp_info = tcp_packets[k].tcp_parse()
+                        ports += " [" + tcp_packets[k].tcp_flag + "]"
+                        ports += " Seq=" + str(tcp_info["seq"])
+                        if "ack" in tcp_info.keys():
+                            ports += " Ack=" + str(tcp_info["ack"])
+                        ports += " Win=" + str(tcp_info["win"])
+
+                        index = QTableWidgetItem(str(self.packets.index(tcp_packets[k]) + 1))
+                        src = QTableWidgetItem(tcp_packets[k].get_source_address())
+                        dest = QTableWidgetItem(tcp_packets[k].get_dest_address())
+                        proto = QTableWidgetItem(tcp_packets[k].get_protocol())
+                        info = QTableWidgetItem(ports)
+
+                        if a:
+                            color = QColor(69, 34, 34)
+                        else:
+                            color = QColor(35, 66, 32)
+
+                        index.setBackgroundColor(color)
+                        src.setBackgroundColor(color)
+                        dest.setBackgroundColor(color)
+                        proto.setBackgroundColor(color)
+                        info.setBackgroundColor(color)
+
+                        table.insertRow(l)
+                        table.setItem(l, 0, index)
+                        table.setItem(l, 1, src)
+                        table.setItem(l, 2, dest)
+                        table.setItem(l, 3, proto)
+                        table.setItem(l, 4, info)
+                        l += 1
+
+                a = not a
+                if tcp_flags[0] == " SYN" and tcp_flags[1] == " SYN ACK":
+
+                    if tcp_flags[len(tcp_flags)-1] == " RST ACK":
+                        color = QColor('GREEN')
+                    elif "FIN" in tcp_flags[len(tcp_flags)-4] and tcp_flags[len(tcp_flags)-3] == " ACK" and "FIN" in tcp_flags[len(tcp_flags)-2] and tcp_flags[len(tcp_flags)-1] == " ACK":
+                        color = QColor('GREEN')
+                    elif "FIN" in tcp_flags[len(tcp_flags)-3] and "FIN" in tcp_flags[len(tcp_flags)-2] and tcp_flags[len(tcp_flags)-1] == " ACK":
+                        color = QColor('GREEN')
+                    elif "FIN" in tcp_flags[len(tcp_flags)-4] and "FIN" in tcp_flags[len(tcp_flags)-3] and "ACK" in tcp_flags[len(tcp_flags)-2] and "ACK" in tcp_flags[len(tcp_flags)-1]:
+                        color = QColor('GREEN')
+                else:
+                    color = QColor('RED')
+                index.setBackgroundColor(color)
+                src.setBackgroundColor(color)
+                dest.setBackgroundColor(color)
+                proto.setBackgroundColor(color)
+                info.setBackgroundColor(color)
+
+    def filter_tftp(self, table):
+        while table.rowCount() > 0:
+            table.removeRow(0)
+        table.setRowCount(0)
+
+        k = 0
+        a = True
+        for packet in self.packets:
+            if packet.source_port == 69 or packet.dest_port == 69:
+                a = not a
+            if packet.l4_type == "tftp":
+                infor = str(packet.source_port) + " -> " + str(packet.dest_port)
+
+                table.insertRow(k)
+                index = QTableWidgetItem(str(self.packets.index(packet) + 1))
+                src = QTableWidgetItem(packet.get_source_address())
+                dest = QTableWidgetItem(packet.get_dest_address())
+                proto = QTableWidgetItem(packet.get_protocol())
+                info = QTableWidgetItem(infor)
+
+                if a:
+                    color = QColor(69, 34, 34)
+                else:
+                    color = QColor(35, 66, 32)
+
+                index.setBackgroundColor(color)
+                src.setBackgroundColor(color)
+                dest.setBackgroundColor(color)
+                proto.setBackgroundColor(color)
+                info.setBackgroundColor(color)
+                table.setItem(k, 0, index)
+                table.setItem(k, 1, src)
+                table.setItem(k, 2, dest)
+                table.setItem(k, 3, proto)
+                table.setItem(k, 4, info)
+                k += 1
+
+
+
+    def filter_arp(self, table):
+        while table.rowCount() > 0:
+            table.removeRow(0)
+        table.setRowCount(0)
+        arps = []
+        added = []
+        k = 0
+
+        for packet in self.packets:
+            if packet.l2_type == "ARP":
+                arps.append(packet)
+        a = True
+        for i in range(len(arps)):
+            if arps[i] not in added:
+                for j in range(len(arps)):
+                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_dst_ip and arps[i].arp_src_ip == arps[j].arp_src_ip:
+                        arp = "[" + arps[j].arp_op + "] "
+                        if arps[j].arp_op == "Request":
+                            arp += "Who has " + arps[j].arp_dst_ip + "? Tell " + arps[j].arp_src_ip
+                        elif arps[j].arp_op == "Reply":
+                            arp += arps[j].arp_src_ip + " is at " + arps[j].arp_src_mac
+                        table.insertRow(k)
+                        index = QTableWidgetItem(str(self.packets.index(arps[j])+1))
+                        src = QTableWidgetItem(arps[j].get_source_address())
+                        dest = QTableWidgetItem(arps[j].get_dest_address())
+                        proto = QTableWidgetItem(arps[j].get_protocol())
+                        info = QTableWidgetItem(arp)
+
+                        if a:
+                            color = QColor(69, 34, 34)
+                        else:
+                            color = QColor(35, 66, 32)
+
+                        index.setBackgroundColor(color)
+                        src.setBackgroundColor(color)
+                        dest.setBackgroundColor(color)
+                        proto.setBackgroundColor(color)
+                        info.setBackgroundColor(color)
+
+                        table.setItem(k, 0, index)
+                        table.setItem(k, 1, src)
+                        table.setItem(k, 2, dest)
+                        table.setItem(k, 3, proto)
+                        table.setItem(k, 4, info)
+                        k += 1
+                        added.append(arps[j])
+                for j in range(len(arps)):
+                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_src_ip and arps[i].arp_src_ip == arps[j].arp_dst_ip:
+                        arp = "[" + arps[j].arp_op + "] "
+                        if arps[j].arp_op == "Request":
+                            arp += "Who has " + arps[j].arp_dst_ip + "? Tell " + arps[j].arp_src_ip
+                        elif arps[j].arp_op == "Reply":
+                            arp += arps[j].arp_src_ip + " is at " + arps[j].arp_src_mac
+
+                        index = QTableWidgetItem(str(self.packets.index(arps[j])+1))
+                        src = QTableWidgetItem(arps[j].get_source_address())
+                        dest = QTableWidgetItem(arps[j].get_dest_address())
+                        proto = QTableWidgetItem(arps[j].get_protocol())
+                        info = QTableWidgetItem(arp)
+                        if a:
+                            color = QColor(69, 34, 34)
+                        else:
+                            color = QColor(35, 66, 32)
+
+                        index.setBackgroundColor(color)
+                        src.setBackgroundColor(color)
+                        dest.setBackgroundColor(color)
+                        proto.setBackgroundColor(color)
+                        info.setBackgroundColor(color)
+
+                        table.insertRow(k)
+                        table.setItem(k, 0, index)
+                        table.setItem(k, 1, src)
+                        table.setItem(k, 2, dest)
+                        table.setItem(k, 3, proto)
+                        table.setItem(k, 4, info)
+                        k += 1
+                        added.append(arps[j])
+                        break
+                a = not a
+
     def populate(self, table):
         while table.rowCount() > 0:
             table.removeRow(0)
         table.setRowCount(0)
         i = 0
-
+        tftp = False
         for packet in self.packets:
             table.insertRow(i)
-            table.setItem(i, 0, QTableWidgetItem(str(i)))
+            protocol = packet.get_protocol()
+            if protocol == "UDP" and packet.l4_type == "" and tftp == True:
+                protocol = "tftp"
+                packet.l4_type = "tftp"
+            table.setItem(i, 0, QTableWidgetItem(str(i+1)))
             table.setItem(i, 1, QTableWidgetItem(packet.get_source_address()))
             table.setItem(i, 2, QTableWidgetItem(packet.get_dest_address()))
-            table.setItem(i, 3, QTableWidgetItem(packet.get_protocol()))
+            table.setItem(i, 3, QTableWidgetItem(protocol))
             if packet.source_port != 0:
                 ports = str(packet.source_port) + " -> " + str(packet.dest_port)
                 if packet.tcp_flag != "":
@@ -236,6 +395,13 @@ class Analyser:
                 elif packet.arp_op == "Reply":
                     arp += packet.arp_src_ip + " is at " + packet.arp_src_mac
                 table.setItem(i, 4, QTableWidgetItem(arp))
+            if packet.l3_type == "ICMP":
+                icmp = packet.icmp_type
+                table.setItem(i, 4, QTableWidgetItem(icmp))
+            if tftp == True and (packet.l3_type != "UDP" or (packet.l3_type == "UDP" and packet.l4_type != "tftp")):
+                tftp = False
+            if packet.l4_type == "tftp" and (packet.tftp_type == 1 or packet.tftp_type == 2):
+                tftp = True
             i += 1
 
 

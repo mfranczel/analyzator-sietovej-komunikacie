@@ -38,8 +38,12 @@ class App(QObject):
         self.textEdit = self.window.findChild(QTextEdit, 'textEdit')
         self.allIPButton = self.window.findChild(QPushButton, 'pushButton')
         self.arp_filter = self.window.findChild(QPushButton, "pushButton_2")
+        self.tcp_filter = self.window.findChild(QPushButton, "pushButton_3")
+        self.tftp_filter = self.window.findChild(QPushButton, "pushButton_4")
 
+        self.tftp_filter.clicked.connect(self.filter_tftp)
         self.arp_filter.clicked.connect(self.filter_arp)
+        self.tcp_filter.clicked.connect(self.filter_tcp)
         self.table.itemSelectionChanged.connect(self.onTableChange)
         self.chckMac.stateChanged.connect(self.onStateChangeMac)
         self.chckLOne.stateChanged.connect(self.onStateChangeLOne)
@@ -59,6 +63,12 @@ class App(QObject):
         self.showLThree = False
         self.showLFour = False
         self.showPorts = False
+
+    def filter_tftp(self):
+        self.analyser.filter_tftp(self.table)
+
+    def filter_tcp(self):
+        self.analyser.filter_tcp(self.table)
 
     def filter_arp(self):
         self.analyser.filter_arp(self.table)
