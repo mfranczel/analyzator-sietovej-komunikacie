@@ -443,7 +443,9 @@ class Analyser:
         for i in range(len(arps)):
             if arps[i] not in added:
                 for j in range(len(arps)):
-                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_dst_ip and arps[i].arp_src_ip == arps[j].arp_src_ip:
+                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_src_ip and arps[i].arp_src_ip == arps[j].arp_dst_ip and arps[j].arp_op == "Reply":
+                        break
+                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_dst_ip and arps[i].arp_src_ip == arps[j].arp_src_ip and arps[j].arp_op=="Request":
                         arp = "[" + arps[j].arp_op + "] "
                         if arps[j].arp_op == "Request":
                             arp += "Who has " + arps[j].arp_dst_ip + "? Tell " + arps[j].arp_src_ip
@@ -480,7 +482,9 @@ class Analyser:
                         k += 1
                         added.append(arps[j])
                 for j in range(len(arps)):
-                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_src_ip and arps[i].arp_src_ip == arps[j].arp_dst_ip:
+                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_dst_ip and arps[i].arp_src_ip == arps[j].arp_src_ip and arps[j].arp_op == "Request":
+                        break
+                    if arps[j] not in added and arps[i].arp_dst_ip == arps[j].arp_src_ip and arps[i].arp_src_ip == arps[j].arp_dst_ip and arps[j].arp_op=="Reply":
                         arp = "[" + arps[j].arp_op + "] "
                         if arps[j].arp_op == "Request":
                             arp += "Who has " + arps[j].arp_dst_ip + "? Tell " + arps[j].arp_src_ip
@@ -516,7 +520,7 @@ class Analyser:
                         table.setItem(k, 4, info)
                         k += 1
                         added.append(arps[j])
-                        break
+
                 a = not a
 
     def populate(self, table):

@@ -31,7 +31,7 @@ class Packet:
         self.set_l2_type()
 
     def set_l2_type(self):
-        csv_file = csv.reader(open('ieee-numbers.csv', "r"), delimiter=",")
+        csv_file = csv.reader(open('ieee-ethertype.csv', "r"), delimiter=",")
         if self.type == 0:
             ethertype = int.from_bytes(self.data[12:14], 'big')
             self.ethertype = ethertype
@@ -135,7 +135,7 @@ class Packet:
             self.type = 2
             self.header_len += 5
             ethertype = int.from_bytes(self.data[20:22], "big")
-            csv_file = csv.reader(open('ieee-numbers.csv', "r"), delimiter=",")
+            csv_file = csv.reader(open('ieee-ethertype.csv', "r"), delimiter=",")
             next(csv_file)
             for row in csv_file:
                 if (row[0] == ''):
