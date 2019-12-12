@@ -54,7 +54,15 @@ class App(QObject):
         self.all_filter = self.window.findChild(QPushButton, "pushButton_5")
         self.icmp_filter = self.window.findChild(QPushButton, "pushButton_6")
         self.text_view = self.window.findChild(QPushButton, "pushButton_7")
+        self.reset = self.window.findChild(QPushButton, "pushButton_8")
+        self.http_filter = self.window.findChild(QPushButton, "pushButton_9")
+        self.https_filter = self.window.findChild(QPushButton, "pushButton_10")
+        self.telnet_filter = self.window.findChild(QPushButton, "pushButton_11")
 
+        self.telnet_filter.clicked.connect(self.filter_telnet)
+        self.https_filter.clicked.connect(self.filter_https)
+        self.http_filter.clicked.connect(self.filter_http)
+        self.reset.clicked.connect(self.reset_table)
         self.text_view.clicked.connect(self.open_text_view)
         self.icmp_filter.clicked.connect(self.filter_icmp)
         self.all_filter.clicked.connect(self.filter_all)
@@ -79,6 +87,18 @@ class App(QObject):
         self.showLThree = False
         self.showLFour = False
         self.showPorts = False
+
+
+    def filter_telnet(self):
+        self.analyser.filter_telnet(self.table)
+
+    def filter_https(self):
+        self.analyser.filter_https(self.table)
+
+    def filter_http(self):
+        self.analyser.filter_http(self.table)
+    def reset_table(self):
+        self.analyser.populate(self.table)
 
     def open_text_view(self):
         self.app_2 = TextWindow('Text_window.ui', analyser=self.analyser)

@@ -187,22 +187,29 @@ class Analyser:
         for packet in self.packets:
             if packet.l3_type == "ICMP":
                 icmp_packets.append(packet)
-
+        a = True
+        inserted = []
         for k in range(len(icmp_packets)):
-            ports = icmp_packets[k].icmp_type
-            index = QTableWidgetItem(str(self.packets.index(icmp_packets[k]) + 1))
-            src = QTableWidgetItem(icmp_packets[k].get_source_address())
-            dest = QTableWidgetItem(icmp_packets[k].get_dest_address())
-            proto = QTableWidgetItem(icmp_packets[k].get_protocol())
-            info = QTableWidgetItem(ports)
-
-            table.insertRow(l)
-            table.setItem(l, 0, index)
-            table.setItem(l, 1, src)
-            table.setItem(l, 2, dest)
-            table.setItem(l, 3, proto)
-            table.setItem(l, 4, info)
-            l += 1
+            if icmp_packets[k] not in inserted:
+                a = not a
+                if icmp_packets[k].icmp_type == "TTL Exceeded":
+                    msg = "TTL Exceeded"
+                    self.insert_packet(table, icmp_packets[k], l, 3, msg)
+                else:
+                    msg = icmp_packets[k].icmp_type + " Id: " + str(icmp_packets[k].icmp_id) + " Seq: " + str(icmp_packets[k].icmp_seq)
+                    self.insert_packet(table, icmp_packets[k], l, a, msg)
+                inserted.append(icmp_packets[k])
+                l += 1
+            if icmp_packets[k].icmp_type == "Echo Request":
+                for j in range(k+1, len(icmp_packets)):
+                    if icmp_packets[j] not in inserted and icmp_packets[j].icmp_type == "Echo Reply":
+                        if icmp_packets[j].icmp_id == icmp_packets[k].icmp_id and icmp_packets[j].icmp_seq == icmp_packets[k].icmp_seq:
+                            msg = icmp_packets[j].icmp_type + " Id: " + str(icmp_packets[j].icmp_id) + " Seq: " + str(
+                                icmp_packets[j].icmp_seq)
+                            self.insert_packet(table, icmp_packets[j], l, a, msg)
+                            inserted.append(icmp_packets[j])
+                            l += 1
+                            break
 
     def filter_tcp(self, table, rm):
         if rm:
@@ -224,7 +231,7 @@ class Analyser:
                 tcp_flags = []
                 for k in range(j, len(tcp_packets)):
 
-                    if ((tcp_packets[j].source_port == tcp_packets[k].source_port and tcp_packets[j].dest_port == tcp_packets[k].dest_port) or (tcp_packets[j].source_port == tcp_packets[k].dest_port and tcp_packets[j].dest_port == tcp_packets[k].source_port)):
+                    if ((tcp_packets[j].source_port == tcp_packets[k].source_port and tcp_packets[j].dest_port == tcp_packets[k].dest_port and tcp_packets[k].source_ip==tcp_packets[j].source_ip and tcp_packets[k].dest_ip == tcp_packets[j].dest_ip) or (tcp_packets[j].source_port == tcp_packets[k].dest_port and tcp_packets[j].dest_port == tcp_packets[k].source_port and tcp_packets[k].source_ip==tcp_packets[j].dest_ip and tcp_packets[k].dest_ip == tcp_packets[j].source_ip)):
 
                         done.append(tcp_packets[k])
                         tcp_flags.append(tcp_packets[k].tcp_flag)
@@ -291,12 +298,32 @@ class Analyser:
 
     def sort_communicastions(self, table):
         self.filter_arp(table, True)
+        self.filter_icmp(table, False)
         self.filter_tcp(table, False)
         self.filter_tftp(table, False)
-        self.filter_icmp(table, False)
 
-    def insert_tftp(self, table, packet, k, a):
-        infor = str(packet.source_port) + " -> " + str(packet.dest_port)
+        for packet in self.packets:
+            if packet.l2_type != "ARP" and packet.l3_type != "ICMP" and packet.l3_type != "TCP" and packet.l4_type != "tftp":
+                table.insertRow(table.rowCount())
+                table.setItem(table.rowCount()-1, 0, QTableWidgetItem(str(table.rowCount())))
+                table.setItem(table.rowCount()-1, 1, QTableWidgetItem(packet.get_source_address()))
+                table.setItem(table.rowCount()-1, 2, QTableWidgetItem(packet.get_dest_address()))
+                table.setItem(table.rowCount()-1, 3, QTableWidgetItem(packet.get_protocol()))
+                ports = ""
+                if packet.source_port != 0:
+                    ports = str(packet.source_port) + " -> " + str(packet.dest_port)
+                    if packet.tcp_flag != "":
+                        ports += " [" + packet.tcp_flag + "]"
+                    if packet.get_protocol() == "TCP":
+                        tcp_info = packet.tcp_parse()
+                        ports += " Seq=" + str(tcp_info["seq"])
+                        if "ack" in tcp_info.keys():
+                            ports += " Ack=" + str(tcp_info["ack"])
+                        ports += " Win=" + str(tcp_info["win"])
+                table.setItem(table.rowCount()-1, 4, QTableWidgetItem(ports))
+
+
+    def insert_packet(self, table, packet, k, a, infor):
 
         table.insertRow(k)
         index = QTableWidgetItem(str(self.packets.index(packet) + 1))
@@ -304,27 +331,60 @@ class Analyser:
         dest = QTableWidgetItem(packet.get_dest_address())
         proto = QTableWidgetItem(packet.get_protocol())
         info = QTableWidgetItem(infor)
+        if int(a) != -1:
+            if int(a) == 1:
+                color = QColor(69, 34, 34)
+            elif int(a) == 0:
+                color = QColor(35, 66, 32)
+            elif int(a) == 3:
+                color = QColor(0, 0, 0)
 
-        if a:
-            color = QColor(69, 34, 34)
-        else:
-            color = QColor(35, 66, 32)
-
-        index.setBackgroundColor(color)
-        src.setBackgroundColor(color)
-        dest.setBackgroundColor(color)
-        proto.setBackgroundColor(color)
-        info.setBackgroundColor(color)
-        index.setForeground(QBrush(self.text_color))
-        src.setForeground(QBrush(self.text_color))
-        dest.setForeground(QBrush(self.text_color))
-        proto.setForeground(QBrush(self.text_color))
-        info.setForeground(QBrush(self.text_color))
+            index.setBackgroundColor(color)
+            src.setBackgroundColor(color)
+            dest.setBackgroundColor(color)
+            proto.setBackgroundColor(color)
+            info.setBackgroundColor(color)
+            index.setForeground(QBrush(self.text_color))
+            src.setForeground(QBrush(self.text_color))
+            dest.setForeground(QBrush(self.text_color))
+            proto.setForeground(QBrush(self.text_color))
+            info.setForeground(QBrush(self.text_color))
         table.setItem(k, 0, index)
         table.setItem(k, 1, src)
         table.setItem(k, 2, dest)
         table.setItem(k, 3, proto)
         table.setItem(k, 4, info)
+
+    def filter_http(self, table):
+        while table.rowCount() > 0:
+            table.removeRow(0)
+        table.setRowCount(0)
+        k = 0
+        for packet in self.packets:
+            if packet.get_protocol() == "http":
+                self.insert_packet(table, packet, k, -1, "")
+                k += 1
+
+    def filter_https(self, table):
+        while table.rowCount() > 0:
+            table.removeRow(0)
+        table.setRowCount(0)
+        k = 0
+        for packet in self.packets:
+            if packet.get_protocol() == "https":
+                self.insert_packet(table, packet, k, -1, "")
+                k += 1
+
+    def filter_telnet(self, table):
+        while table.rowCount() > 0:
+            table.removeRow(0)
+        table.setRowCount(0)
+        k = 0
+        for packet in self.packets:
+            if packet.get_protocol() == "telnet":
+                self.insert_packet(table, packet, k, -1, "")
+                k += 1
+
 
     def filter_tftp(self, table, rm):
         if rm:
@@ -344,19 +404,23 @@ class Analyser:
                 src_port = packet.source_port
                 added_ports.append(src_port)
                 dst_port = -1
-                self.insert_tftp(table, packet, k, a)
+                infor = str(packet.source_port) + " -> " + str(packet.dest_port)
+                self.insert_packet(table, packet, k, a, infor)
                 k += 1
                 for i in range(self.packets.index(packet), len(self.packets)):
                     if dst_port == -1 and self.packets[i].dest_port == src_port:
                         dst_port = self.packets[i].source_port
                         added_ports.append(dst_port)
-                        self.insert_tftp(table, self.packets[i], k, a)
+                        infor = str(self.packets[i].source_port) + " -> " + str(self.packets[i].dest_port)
+                        self.insert_packet(table, self.packets[i], k, a, infor)
                         k += 1
                     elif self.packets[i].source_port == src_port and self.packets[i].dest_port == dst_port:
-                        self.insert_tftp(table, self.packets[i], k, a)
+                        infor = str(self.packets[i].source_port) + " -> " + str(self.packets[i].dest_port)
+                        self.insert_packet(table, self.packets[i], k, a, infor)
                         k += 1
                     elif self.packets[i].source_port == dst_port and self.packets[i].dest_port == src_port:
-                        self.insert_tftp(table, self.packets[i], k, a)
+                        infor = str(self.packets[i].source_port) + " -> " + str(self.packets[i].dest_port)
+                        self.insert_packet(table, self.packets[i], k, a, infor)
                         k += 1
 
 

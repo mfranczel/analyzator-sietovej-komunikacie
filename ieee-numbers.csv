@@ -179,7 +179,7 @@ X3T51/80-50, Xerox Corporation, Stamford, CT., October 1980.][Neil_Sembower]"
 ,86A3-86AC,,,Gateway Communications,[Neil_Sembower]
 ,86DB,,,SECTRA,[Neil_Sembower]
 ,86DE,,,Delta Controls,[Neil_Sembower]
-,86DD,,,IPv6,[RFC7042]
+34525,86DD,,,IPv6,[RFC7042]
 34527,86DF,-,-,ATOMIC,[Joe_Touch]
 ,86E0-86EF,,,Landis & Gyr Powers,[Neil_Sembower]
 ,8700-8710,,,Motorola,[Neil_Sembower]
@@ -227,3 +227,6 @@ X3T51/80-50, Xerox Corporation, Stamford, CT., October 1980.][Neil_Sembower]"
 65280,FF00,-,-,BBN VITAL-LanBridge cache,[Neil_Sembower]
 ,FF00-FF0F,,,ISC Bunker Ramo,[Neil_Sembower]
 65535,FFFF,-,-,Reserved,[RFC1701]
+8192,2000,-,-,CDP
+267,010b,-,-,STP
+8196,2004,-,-,DTP

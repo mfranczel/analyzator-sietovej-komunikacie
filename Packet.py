@@ -19,6 +19,8 @@ class Packet:
     arp_src_ip = ""
     arp_dst_ip = ""
     icmp_type = ""
+    icmp_seq = -1
+    icmp_id = -1
     tftp_type = -1
 
     def __init__(self, data):
@@ -98,8 +100,12 @@ class Packet:
             code = int(self.data[l4_header_start+1])
             if type == 0:
                 self.icmp_type = "Echo Reply"
+                self.icmp_id = int.from_bytes(self.data[l4_header_start + 4:l4_header_start + 6], 'big')
+                self.icmp_seq = int.from_bytes(self.data[l4_header_start + 6:l4_header_start + 8], 'big')
             elif type == 8:
                 self.icmp_type = "Echo Request"
+                self.icmp_id = int.from_bytes(self.data[l4_header_start+4:l4_header_start+6], 'big')
+                self.icmp_seq = int.from_bytes(self.data[l4_header_start + 6:l4_header_start + 8], 'big')
             elif type == 3:
                 self.icmp_type = "Destination unreachable"
             elif type == 11:
@@ -201,8 +207,16 @@ class Packet:
             if self.l3_type != "TCP":
                 return self.l4_type
             else:
-                if self.tcp_flag == " PSH ACK":
+                if "PSH" in self.tcp_flag and "ACK" in self.tcp_flag:
                     return self.l4_type
+                else:
+                    return self.l3_type
+                #size = 14 + 4 * int(bin(self.data[14])[4:], 2)
+                #size = 14 + 4 * int(bin(self.data[14])[4:], 2) + 4*(int(self.data[size+12] >> 4))
+                #if size == len(self.data) or int.from_bytes(self.data[size:], 'big') == 0:
+                #    return self.l3_type
+                #else:
+                #    return self.l4_type
         if self.l3_type != "":
             return self.l3_type
         if self.l2_type != "":

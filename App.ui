@@ -115,13 +115,13 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>410</y>
+      <y>460</y>
       <width>81</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
-     <string>Show Sender IP's</string>
+     <string>IP's</string>
     </property>
    </widget>
    <widget class="QGroupBox" name="groupBox">
@@ -130,7 +130,7 @@
       <x>10</x>
       <y>220</y>
       <width>221</width>
-      <height>171</height>
+      <height>231</height>
      </rect>
     </property>
     <property name="title">
@@ -153,7 +153,7 @@
      <property name="geometry">
       <rect>
        <x>100</x>
-       <y>20</y>
+       <y>80</y>
        <width>81</width>
        <height>23</height>
       </rect>
@@ -201,12 +201,64 @@
       <string>ICMP</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="pushButton_8">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>20</y>
+       <width>81</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>RESET</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_9">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>110</y>
+       <width>81</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>HTTP</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_10">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>110</y>
+       <width>81</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>HTTPS</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_11">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>140</y>
+       <width>81</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>TELNET</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QPushButton" name="pushButton_7">
     <property name="geometry">
      <rect>
-      <x>140</x>
-      <y>410</y>
+      <x>20</x>
+      <y>490</y>
       <width>81</width>
       <height>23</height>
      </rect>
